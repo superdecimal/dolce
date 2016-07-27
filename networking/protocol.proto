@@ -1,0 +1,16 @@
+syntax = "proto3"
+
+package protocol;
+
+message EntryStructure {
+    string id = 1;
+    string key = 2;
+}
+
+message Request {
+    repeated EntryStructure entry = 1;
+}
+
+message Response {
+    repeated string id = 1;
+}
