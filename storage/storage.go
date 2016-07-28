@@ -19,24 +19,33 @@ type Database struct {
 	Version      int
 	Data         map[string][]byte
 	dbMutex      sync.Mutex
+	channel      chan int
 }
 
 func init() {
+
+}
+
+func setWorker(db *Database, key string, value string) error {
+	db.dbMutex.Lock()
+	defer db.dbMutex.Unlock()
+
+	dlog := dolcelog.GetLogInst()
+	data := []byte(value)
+
+	dlog.Set(key, data)
+	db.Data[key] = data
+
+	return nil
 }
 
 func (d *Database) Set(key string, value string) error {
-	d.dbMutex.Lock()
-	defer d.dbMutex.Unlock()
-	dlog := dolcelog.GetLogInst()
-	data := []byte(value)
-	dlog.Set(key, data)
-	d.Data[key] = data
+	go setWorker(d, key, value)
 	return nil
 }
 
 func (d *Database) Read(key string) (string, error) {
 	return string(d.Data[key]), nil
-
 }
 
 // CreateDBFile creates the db file and returns a pointer to it
@@ -63,6 +72,7 @@ func CreateDBFile(databaseName string) (*Database, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	defer f.Close()
 
 	db.DatabaseName = databaseName
@@ -70,8 +80,10 @@ func CreateDBFile(databaseName string) (*Database, error) {
 	db.Version = 001
 	db.File = f
 	db.Data = make(map[string][]byte)
+	db.channel = make(chan int)
 
 	wr := bufio.NewWriter(f)
+
 	_, err = fmt.Fprintf(wr, "DolceDB.%d", config.DBVersion)
 	if err != nil {
 		fmt.Println(err)
