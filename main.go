@@ -18,7 +18,11 @@ func main() {
 		return
 	}
 
-	db.Set("TestKey6", "TestValue100")
+	for i := 0; i < 1000000; i++ {
+		db.Set("TestKey6", fmt.Sprintf("TestValue%d", i))
+	}
+
+	// db.Set("TestKey6", "TestValue100")
 
 	data, _ := db.Read("TestKey6")
 	fmt.Println(data)
@@ -26,7 +30,7 @@ func main() {
 	go networking.StartServer()
 	go networking.StartTCPServer()
 
-	c := make(chan os.Signal, 1)
+	c := make(chan os.Signal, 1000)
 	signal.Notify(c, os.Interrupt)
 
 	func() {

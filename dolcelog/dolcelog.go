@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 )
 
 /*
@@ -30,7 +29,7 @@ func init() {
 	dlog.version = 1
 	dlog.filename = "db.log"
 	dlog.path = "data"
-	// TODO change this reflect the index of the log when the server is restarted
+	// TODO change this to reflect the index of the log when the server is restarted
 	dlog.index = 0
 
 	var filepath = dlog.path + "/" + dlog.filename
