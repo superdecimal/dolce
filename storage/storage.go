@@ -40,6 +40,10 @@ func (d *Database) Read(key string) (string, error) {
 	return string(d.Data[key]), nil
 }
 
+func (d *Database) Delete(key string) (bool, error) {
+	return false, nil
+}
+
 // CreateDBFile creates the db file and returns a pointer to it
 func CreateDBFile(databaseName string) (*Database, error) {
 	var db Database
@@ -82,7 +86,6 @@ func CreateDBFile(databaseName string) (*Database, error) {
 
 	return &db, nil
 }
-
 func DeleteDBFile(db string) bool {
 	err := os.Remove(db)
 	if err != nil {
@@ -93,5 +96,9 @@ func DeleteDBFile(db string) bool {
 }
 
 func ListDBs() {
+
+}
+
+func RebuildMap() {
 
 }

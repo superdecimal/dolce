@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 )
 
 /*
@@ -21,6 +22,7 @@ type DolceLog struct {
 	file     *os.File
 	version  int
 	index    uint64
+	logMutex sync.Mutex
 }
 
 var dlog DolceLog
@@ -61,8 +63,10 @@ func init() {
 }
 
 func (l *DolceLog) Set(key string, value []byte) {
-	wr := bufio.NewWriter(l.file)
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
+	wr := bufio.NewWriter(l.file)
 	_, err := fmt.Fprintf(wr, "%d  S %s %s\n", l.index, key, value)
 	if err != nil {
 		fmt.Println(err)
@@ -80,6 +84,34 @@ func GetLogInst() *DolceLog {
 	return &dlog
 }
 
-func (l *DolceLog) RecreateMap() {
+func GetFromIndex(index int) {
 
+}
+
+func (l *DolceLog) GetAll() ([]string, error) {
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
+
+	result := make([]string, 0)
+	i := 0
+
+	f, err := os.Open(dlog.filename)
+	defer f.Close()
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		result = append(result, scanner.Text())
+		i++
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return result, nil
 }
