@@ -1,3 +1,4 @@
+// Package dolcelog provides an append only log and functions to handle transactions with it.
 package dolcelog
 
 import (
@@ -9,7 +10,7 @@ import (
 )
 
 /*
-Basic structure to be used for the log
+DolceLog is the basic structure used by the log
 - filename is the log filename
 - path is the folder path of the log
 - file is a point to the log file
@@ -27,6 +28,7 @@ type DolceLog struct {
 
 var dlog DolceLog
 
+// Initialiazes the log
 func init() {
 	dlog.version = 1
 	dlog.filename = "db.log"
@@ -62,6 +64,7 @@ func init() {
 	//TODO ReadFile and return map and index
 }
 
+// Set appned to the log
 func (l *DolceLog) Set(key string, value []byte) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
@@ -80,14 +83,17 @@ func (l *DolceLog) Set(key string, value []byte) {
 	}
 }
 
+// GetLogInst returns the log instance.
 func GetLogInst() *DolceLog {
 	return &dlog
 }
 
-func GetFromIndex(index int) {
+// GetFromIndex returns the log after a specific index.
+func (l *DolceLog) GetFromIndex(index int) {
 
 }
 
+// GetAll returns a slice of the with the whole log.
 func (l *DolceLog) GetAll() ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
