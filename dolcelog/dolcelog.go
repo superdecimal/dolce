@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -89,8 +91,42 @@ func GetLogInst() *DolceLog {
 }
 
 // GetFromIndex returns the log after a specific index.
-func (l *DolceLog) GetFromIndex(index int) {
+// TODO implement a better file parser
+func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
+	l.logMutex.Lock()
+	defer l.logMutex.Unlock()
 
+	var result = make([]string, 0)
+	i := 0
+
+	f, err := os.Open(dlog.filename)
+	defer f.Close()
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		sepIndex := strings.Index(line, " ")
+		id, err := strconv.Atoi(line[:sepIndex])
+		if err != nil {
+			log.Fatal("Index retrieval error.")
+		}
+
+		if index <= id {
+			result = append(result, line)
+		}
+		i++
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return result, nil
 }
 
 // GetAll returns a slice of the with the whole log.
@@ -98,7 +134,7 @@ func (l *DolceLog) GetAll() ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
-	result := make([]string, 0)
+	var result = make([]string, 0)
 	i := 0
 
 	f, err := os.Open(dlog.filename)
