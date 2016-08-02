@@ -28,7 +28,7 @@ func (d *Database) Set(key string, value string) error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
 
-	dlog := dolcelog.GetLogInst()
+	dlog := dolcelog.GetInst()
 	data := []byte(value)
 	dlog.Set(key, data)
 	d.Data[key] = data

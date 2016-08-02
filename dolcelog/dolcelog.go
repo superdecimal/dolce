@@ -86,7 +86,7 @@ func (l *DolceLog) Set(key string, value []byte) {
 }
 
 // GetLogInst returns the log instance.
-func GetLogInst() *DolceLog {
+func GetInst() *DolceLog {
 	return &dlog
 }
 
