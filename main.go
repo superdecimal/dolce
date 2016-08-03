@@ -18,14 +18,15 @@ func main() {
 		return
 	}
 
-	for i := 0; i < 1000000; i++ {
-		db.Set("TestKey6", fmt.Sprintf("TestValue%d", i))
-	}
+	// On startup rebuild map
+	db.RebuildMap()
 
-	// db.Set("TestKey6", "TestValue100")
+	// for i := 0; i < 1000; i++ {
+	// 	db.Set("TestKey6", fmt.Sprintf("TestValue%d", i))
+	// }
 
-	data, _ := db.Read("TestKey6")
-	fmt.Println(data)
+	// data, _ := db.Read("TestKey6")
+	// fmt.Println(data)
 
 	go networking.StartServer()
 	go networking.StartTCPServer()
