@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/superdecimal/dolce/config"
@@ -99,6 +101,25 @@ func ListDBs() {
 
 }
 
-func RebuildMap() {
+// RebuildMap is rebuilds the in memory map from the log
+func (d *Database) RebuildMap() {
+	d.dbMutex.Lock()
+	defer d.dbMutex.Unlock()
 
+	dLog := dolcelog.GetInst()
+	temp, err := dLog.GetAll()
+	if err != nil {
+		log.Fatal("Could not get log.")
+		return
+	}
+
+	for _, entry := range temp {
+		var key, value, action string
+		var ind int
+
+		in := strings.NewReader(entry)
+		fmt.Fscanf(in, "%d %s %s %s", &ind, &action, &key, &value)
+
+		d.Data[key] = []byte(value)
+	}
 }
