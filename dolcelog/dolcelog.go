@@ -48,7 +48,7 @@ func init() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Log file not found and created")
+		fmt.Println("Log file not found and created.")
 		dlog.file = f
 		return
 	}
@@ -60,13 +60,12 @@ func init() {
 		return
 	}
 
-	fmt.Println("Log file found")
+	fmt.Println("Log file found.")
 	dlog.file = f
 
-	//TODO ReadFile and return map and index
 }
 
-// Set appned to the log
+// Set appened to the log
 func (l *DolceLog) Set(key string, value []byte) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
@@ -133,9 +132,9 @@ func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
 func (l *DolceLog) GetAll() ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
-
+	var i uint64
 	var result = make([]string, 0)
-	i := 0
+	i = 0
 
 	f, err := os.Open(dlog.filename)
 	defer f.Close()
@@ -150,6 +149,8 @@ func (l *DolceLog) GetAll() ([]string, error) {
 		result = append(result, scanner.Text())
 		i++
 	}
+
+	l.index = i
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
