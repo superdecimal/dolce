@@ -1,4 +1,4 @@
-package storage
+package database
 
 import (
 	"bufio"
@@ -21,18 +21,19 @@ type Database struct {
 	Version      int
 	Data         map[string][]byte
 	dbMutex      sync.Mutex
+	dlog         *dolcelog.DolceLog
 }
 
 func init() {
 }
 
+// Set adds a value to the map and stores the action on the log
 func (d *Database) Set(key string, value string) error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
 
-	dlog := dolcelog.GetInst()
 	data := []byte(value)
-	dlog.Set(key, data)
+	d.dlog.Set(key, data)
 	d.Data[key] = data
 
 	return nil
@@ -46,9 +47,11 @@ func (d *Database) Delete(key string) (bool, error) {
 	return false, nil
 }
 
-// CreateDBFile creates the db file and returns a pointer to it
-func CreateDBFile(databaseName string) (*Database, error) {
-	var db Database
+// New creates a new database
+func New(dl *dolcelog.DolceLog, databaseName string) (*Database, error) {
+	db := &Database{
+		dlog: dl,
+	}
 	_, err := os.Stat(config.DBFolder)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -63,11 +66,13 @@ func CreateDBFile(databaseName string) (*Database, error) {
 	err = os.Chdir(config.DBFolder)
 	if err != nil {
 		fmt.Println(err)
+		return nil, errors.New("error")
 	}
 
 	f, err := os.Create(databaseName)
 	if err != nil {
 		fmt.Println(err)
+		return nil, errors.New("error")
 	}
 
 	defer f.Close()
@@ -86,9 +91,11 @@ func CreateDBFile(databaseName string) (*Database, error) {
 	}
 	wr.Flush()
 
-	return &db, nil
+	return db, nil
 }
-func DeleteDBFile(db string) bool {
+
+// Delete db file
+func Delete(db string) bool {
 	err := os.Remove(db)
 	if err != nil {
 		return false
@@ -102,15 +109,14 @@ func ListDBs() {
 }
 
 // RebuildMap is rebuilds the in memory map from the log
-func (d *Database) RebuildMap() {
+func (d *Database) RebuildMap() error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
 
-	dLog := dolcelog.GetInst()
-	temp, err := dLog.GetAll()
+	temp, err := d.dlog.GetAll()
 	if err != nil {
 		log.Fatal("Could not get log.")
-		return
+		return err
 	}
 
 	for _, entry := range temp {
@@ -118,8 +124,13 @@ func (d *Database) RebuildMap() {
 		var ind int
 
 		in := strings.NewReader(entry)
-		fmt.Fscanf(in, "%d %s %s %s", &ind, &action, &key, &value)
+		_, err := fmt.Fscanf(in, "%d %s %s %q", &ind, &action, &key, &value)
+		if err != nil {
+			return err
+		}
 
 		d.Data[key] = []byte(value)
 	}
+
+	return nil
 }

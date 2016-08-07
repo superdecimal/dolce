@@ -3,12 +3,19 @@ package dolcelog
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+)
+
+var (
+	ErrNotFound   = errors.New("Log file not found or created.")
+	ErrFileCreate = errors.New("Error creating log file.")
+	ErrReadFile   = errors.New("Error reading the log file.")
+	ErrWriteFile  = errors.New("Error writing to the log file")
 )
 
 /*
@@ -24,19 +31,27 @@ type DolceLog struct {
 	path     string
 	file     *os.File
 	version  int
-	index    uint64
+	index    Index
 	logMutex sync.Mutex
 }
 
-var dlog DolceLog
+type Index uint64
 
-// Initialiazes the log
-func init() {
-	dlog.version = 1
-	dlog.filename = "db.log"
-	dlog.path = "data"
-	// TODO change this to reflect the index of the log when the server is restarted
-	dlog.index = 0
+func ToIndex(i string) (Index, error) {
+	temp, _ := strconv.ParseUint(i, 0, 64)
+	return Index(temp), nil
+}
+
+//New creates a new log
+func New(fp, fn string) (*DolceLog, bool, error) {
+	var i Index
+
+	dlog := &DolceLog{
+		version:  1,
+		filename: fn,
+		path:     fp,
+		index:    0,
+	}
 
 	var filepath = dlog.path + "/" + dlog.filename
 
@@ -45,33 +60,43 @@ func init() {
 		// If not create it
 		f, err := os.Create(filepath)
 		if err != nil {
-			log.Fatal(err)
+			return nil, false, ErrFileCreate
 		}
 
-		fmt.Println("Log file not found and created.")
 		dlog.file = f
-		return
+
+		fmt.Println("Log file not found and created.")
+
+		return dlog, false, nil
 	}
 
 	// If file exists open it
 	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatal(err)
-		return
+		return nil, true, ErrNotFound
 	}
 
-	fmt.Println("Log file found.")
+	//Check logfile index
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		i++
+	}
+
+	dlog.index = i
 	dlog.file = f
 
+	fmt.Println("Log file found.")
+
+	return dlog, true, nil
 }
 
 // Set appened to the log
-func (l *DolceLog) Set(key string, value []byte) {
+func (l *DolceLog) Set(key string, value []byte) error {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
 	wr := bufio.NewWriter(l.file)
-	_, err := fmt.Fprintf(wr, "%d  S %s %s\n", l.index, key, value)
+	_, err := fmt.Fprintf(wr, "%d  S %s %q\n", l.index, key, value)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -80,29 +105,25 @@ func (l *DolceLog) Set(key string, value []byte) {
 
 	err = wr.Flush()
 	if err != nil {
-		log.Fatal("Data not writen in file.")
+		return ErrWriteFile
 	}
-}
 
-// GetLogInst returns the log instance.
-func GetInst() *DolceLog {
-	return &dlog
+	return nil
 }
 
 // GetFromIndex returns the log after a specific index.
 // TODO implement a better file parser
-func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
+func (l *DolceLog) GetFromIndex(index Index) ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
 	var result = make([]string, 0)
 	i := 0
 
-	f, err := os.Open(dlog.filename)
+	f, err := os.Open(l.filename)
 	defer f.Close()
 	if err != nil {
-		log.Fatal(err)
-		return nil, err
+		return nil, ErrReadFile
 	}
 
 	scanner := bufio.NewScanner(f)
@@ -110,10 +131,7 @@ func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		sepIndex := strings.Index(line, " ")
-		id, err := strconv.Atoi(line[:sepIndex])
-		if err != nil {
-			log.Fatal("Index retrieval error.")
-		}
+		id, _ := ToIndex(line[:sepIndex])
 
 		if index <= id {
 			result = append(result, line)
@@ -122,7 +140,7 @@ func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return nil, ErrReadFile
 	}
 
 	return result, nil
@@ -132,15 +150,14 @@ func (l *DolceLog) GetFromIndex(index int) ([]string, error) {
 func (l *DolceLog) GetAll() ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
-	var i uint64
+	var i Index
 	var result = make([]string, 0)
 	i = 0
 
-	f, err := os.Open(dlog.filename)
+	f, err := os.Open(l.filename)
 	defer f.Close()
 	if err != nil {
-		log.Fatal(err)
-		return nil, err
+		return nil, ErrReadFile
 	}
 
 	scanner := bufio.NewScanner(f)
@@ -153,7 +170,7 @@ func (l *DolceLog) GetAll() ([]string, error) {
 	l.index = i
 
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return nil, ErrReadFile
 	}
 
 	return result, nil
