@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/superdecimal/dolce/config"
-	"github.com/superdecimal/dolce/dolcelog"
+	"github.com/superdecimal/dolce/logbook"
 )
 
 type Database struct {
@@ -21,7 +21,7 @@ type Database struct {
 	Version      int
 	Data         map[string][]byte
 	dbMutex      sync.Mutex
-	dlog         *dolcelog.DolceLog
+	dlog         *logbook.Logbook
 }
 
 func init() {
@@ -48,7 +48,7 @@ func (d *Database) Delete(key string) (bool, error) {
 }
 
 // New creates a new database
-func New(dl *dolcelog.DolceLog, databaseName string) (*Database, error) {
+func New(dl *logbook.Logbook, databaseName string) (*Database, error) {
 	db := &Database{
 		dlog: dl,
 	}

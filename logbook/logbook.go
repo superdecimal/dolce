@@ -1,5 +1,5 @@
-// Package dolcelog provides an append only log and functions to handle transactions with it.
-package dolcelog
+// Package logbook provides an append only log and functions to handle transactions with it.
+package logbook
 
 import (
 	"bufio"
@@ -19,14 +19,14 @@ var (
 )
 
 /*
-DolceLog is the basic structure used by the log
+Logbook is the basic structure used by the log
 - filename is the log filename
 - path is the folder path of the log
 - file is a point to the log file
 - index is the last number used as an index in the log
 - logMutex is a mutex to lock/unlock writing to the log
 */
-type DolceLog struct {
+type Logbook struct {
 	filename string
 	path     string
 	file     *os.File
@@ -43,10 +43,10 @@ func ToIndex(i string) (Index, error) {
 }
 
 //New creates a new log
-func New(fp, fn string) (*DolceLog, bool, error) {
+func New(fp, fn string) (*Logbook, bool, error) {
 	var i Index
 
-	dlog := &DolceLog{
+	dlog := &Logbook{
 		version:  1,
 		filename: fn,
 		path:     fp,
@@ -91,7 +91,7 @@ func New(fp, fn string) (*DolceLog, bool, error) {
 }
 
 // Set appened to the log
-func (l *DolceLog) Set(key string, value []byte) error {
+func (l *Logbook) Set(key string, value []byte) error {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
@@ -113,7 +113,7 @@ func (l *DolceLog) Set(key string, value []byte) error {
 
 // GetFromIndex returns the log after a specific index.
 // TODO implement a better file parser
-func (l *DolceLog) GetFromIndex(index Index) ([]string, error) {
+func (l *Logbook) GetFromIndex(index Index) ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
@@ -147,7 +147,7 @@ func (l *DolceLog) GetFromIndex(index Index) ([]string, error) {
 }
 
 // GetAll returns a slice of the with the whole log.
-func (l *DolceLog) GetAll() ([]string, error) {
+func (l *Logbook) GetAll() ([]string, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 	var i Index

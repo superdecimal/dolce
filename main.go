@@ -8,12 +8,12 @@ import (
 
 	"github.com/superdecimal/dolce/config"
 	"github.com/superdecimal/dolce/database"
-	"github.com/superdecimal/dolce/dolcelog"
+	"github.com/superdecimal/dolce/logbook"
 	"github.com/superdecimal/dolce/networking"
 )
 
 func main() {
-	dlog, found, err := dolcelog.New("data", "db.log")
+	dlog, found, err := logbook.New("data", "db.log")
 	if err != nil {
 		log.Fatal("No log could be created or found")
 	}
