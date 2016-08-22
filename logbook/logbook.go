@@ -12,20 +12,19 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("Log file not found or created.")
-	ErrFileCreate = errors.New("Error creating log file.")
-	ErrReadFile   = errors.New("Error reading the log file.")
-	ErrWriteFile  = errors.New("Error writing to the log file")
+	ErrNotFound     = errors.New("Error log file not found or created.")
+	ErrFolderCreate = errors.New("Error creating log folder")
+	ErrFileCreate   = errors.New("Error creating log file.")
+	ErrReadFile     = errors.New("Error reading the log file.")
+	ErrWriteFile    = errors.New("Error writing to the log file")
 )
 
-/*
-Logbook is the basic structure used by the log
-- filename is the log filename
-- path is the folder path of the log
-- file is a point to the log file
-- index is the last number used as an index in the log
-- logMutex is a mutex to lock/unlock writing to the log
-*/
+// Logbook is the basic structure used by the log
+// - filename is the log filename
+// - path is the folder path of the log
+// - file is a point to the log file
+// - index is the last number used as an index in the log
+// - logMutex is a mutex to lock/unlock writing to the log
 type Logbook struct {
 	filename string
 	path     string
@@ -54,6 +53,16 @@ func New(fp, fn string) (*Logbook, bool, error) {
 	}
 
 	var filepath = dlog.path + "/" + dlog.filename
+
+	_, err := os.Stat(dlog.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.Mkdir(dlog.path, 0777)
+			if err != nil {
+				return nil, false, ErrFolderCreate
+			}
+		}
+	}
 
 	//Check if file exists
 	if _, err := os.Stat(filepath); os.IsNotExist(err) {

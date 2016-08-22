@@ -57,7 +57,6 @@ func New(dl *logbook.Logbook, databaseName string) (*Database, error) {
 		if os.IsNotExist(err) {
 			err := os.Mkdir(config.DBFolder, 0777)
 			if err != nil {
-				fmt.Println(err)
 				return nil, errors.New("error")
 			}
 		}
