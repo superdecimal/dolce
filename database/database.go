@@ -21,7 +21,7 @@ type Database struct {
 	Version      int
 	Data         map[string][]byte
 	dbMutex      sync.Mutex
-	dlog         *logbook.Logbook
+	dlog         logbook.Logbook
 }
 
 func init() {
@@ -48,7 +48,7 @@ func (d *Database) Delete(key string) (bool, error) {
 }
 
 // New creates a new database
-func New(dl *logbook.Logbook, databaseName string) (*Database, error) {
+func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 	db := &Database{
 		dlog: dl,
 	}
