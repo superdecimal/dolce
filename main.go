@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	dlog, found, err := logbook.New("data", "db.log")
+	dlog, _, err := logbook.New("data", "db.log")
 	if err != nil {
 		log.Fatal("No log could be created or found")
 	}
@@ -22,11 +22,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not create db file")
 		return
-	}
-
-	// On startup rebuild map
-	if found {
-		db.RebuildMap()
 	}
 
 	// for i := 0; i < 1000; i++ {

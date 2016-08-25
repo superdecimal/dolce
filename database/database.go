@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/superdecimal/dolce/config"
@@ -21,7 +20,7 @@ type Database struct {
 	Version      int
 	Data         map[string][]byte
 	dbMutex      sync.Mutex
-	dlog         logbook.Logbook
+	Dlog         logbook.Logbook
 }
 
 func init() {
@@ -33,7 +32,7 @@ func (d *Database) Set(key string, value string) error {
 	defer d.dbMutex.Unlock()
 
 	data := []byte(value)
-	d.dlog.Set(key, data)
+	d.Dlog.Append(key, data)
 	d.Data[key] = data
 
 	return nil
@@ -50,7 +49,7 @@ func (d *Database) Delete(key string) (bool, error) {
 // New creates a new database
 func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 	db := &Database{
-		dlog: dl,
+		Dlog: dl,
 	}
 	_, err := os.Stat(config.DBFolder)
 	if err != nil {
@@ -80,7 +79,7 @@ func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 	db.Filename = databaseName
 	db.Version = 001
 	db.File = f
-	db.Data = make(map[string][]byte, 1000)
+	db.Data = map[string][]byte{}
 
 	wr := bufio.NewWriter(f)
 
@@ -89,6 +88,11 @@ func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 		fmt.Println(err)
 	}
 	wr.Flush()
+
+	err = db.RebuildMap()
+	if err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }
@@ -112,24 +116,13 @@ func (d *Database) RebuildMap() error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
 
-	temp, err := d.dlog.GetAll()
+	logData, err := d.Dlog.GetState()
 	if err != nil {
 		log.Fatal("Could not get log.")
 		return err
 	}
 
-	for _, entry := range temp {
-		var key, value, action string
-		var ind int
-
-		in := strings.NewReader(entry)
-		_, err := fmt.Fscanf(in, "%d %s %s %q", &ind, &action, &key, &value)
-		if err != nil {
-			return err
-		}
-
-		d.Data[key] = []byte(value)
-	}
+	d.Data = logData
 
 	return nil
 }

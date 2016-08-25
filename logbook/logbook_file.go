@@ -98,7 +98,7 @@ func New(fp, fn string) (*LogbookFile, bool, error) {
 }
 
 // Set appened to the log
-func (l *LogbookFile) Set(key string, value []byte) error {
+func (l *LogbookFile) Append(key string, value []byte) error {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
 
@@ -153,12 +153,12 @@ func (l *LogbookFile) GetFromIndex(index Index) ([]string, error) {
 	return result, nil
 }
 
-// GetAll returns a slice of the with the whole log.
-func (l *LogbookFile) GetAll() ([]string, error) {
+// GetAll returns a map with the latest state
+func (l *LogbookFile) GetState() (map[string][]byte, error) {
 	l.logMutex.Lock()
 	defer l.logMutex.Unlock()
+	data := make(map[string][]byte)
 	var i Index
-	var result = make([]string, 0)
 	i = 0
 
 	f, err := os.Open(l.filename)
@@ -170,15 +170,24 @@ func (l *LogbookFile) GetAll() ([]string, error) {
 	scanner := bufio.NewScanner(f)
 
 	for scanner.Scan() {
-		result = append(result, scanner.Text())
+		var key, value, action string
+		var ind int
+
+		_, err := fmt.Sscanf(scanner.Text(), "%d %s %s %q", &ind, &action, &key, &value)
+		if err != nil {
+			return nil, err
+		}
+
+		data[key] = []byte(value)
 		i++
 	}
 
 	l.index = i
 
+	fmt.Println("Index: ", i)
 	if err := scanner.Err(); err != nil {
 		return nil, ErrReadFile
 	}
 
-	return result, nil
+	return data, nil
 }
