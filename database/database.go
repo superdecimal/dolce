@@ -115,14 +115,27 @@ func ListDBs() {
 func (d *Database) RebuildMap() error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
+	data := make(map[string][]byte)
 
-	logData, err := d.Dlog.GetState()
+	logChan, err := d.Dlog.GetAll()
 	if err != nil {
 		log.Fatal("Could not get log.")
 		return err
 	}
 
-	d.Data = logData
+	for line := range logChan {
+		var key, value, action string
+		var ind int
+
+		_, err := fmt.Sscanf(line, "%d %s %s %q", &ind, &action, &key, &value)
+		if err != nil {
+			return err
+		}
+
+		data[key] = []byte(value)
+	}
+
+	d.Data = data
 
 	return nil
 }

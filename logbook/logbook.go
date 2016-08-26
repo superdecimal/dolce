@@ -7,8 +7,8 @@ type Logbook interface {
 	Append(string, []byte) error
 
 	// GetFromIndex returns all the lines after a specific index
-	GetFromIndex(Index) ([]string, error)
+	GetFromIndex(Index) (<-chan string, error)
 
-	// Replays all the log and gets a map of the current state
-	GetState() (map[string][]byte, error)
+	// GetAll returns a channel and send the logbook line by line
+	GetAll() (<-chan string, error)
 }

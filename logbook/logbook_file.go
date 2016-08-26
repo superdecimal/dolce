@@ -103,7 +103,7 @@ func (l *LogbookFile) Append(key string, value []byte) error {
 	defer l.logMutex.Unlock()
 
 	wr := bufio.NewWriter(l.file)
-	_, err := fmt.Fprintf(wr, "%d  S %s %q\n", l.index, key, value)
+	_, err := fmt.Fprintf(wr, "%d  S %q %q\n", l.index, key, value)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -120,74 +120,73 @@ func (l *LogbookFile) Append(key string, value []byte) error {
 
 // GetFromIndex returns the log after a specific index.
 // TODO implement a better file parser
-func (l *LogbookFile) GetFromIndex(index Index) ([]string, error) {
+func (l *LogbookFile) GetFromIndex(index Index) (<-chan string, error) {
 	l.logMutex.Lock()
-	defer l.logMutex.Unlock()
-
-	var result = make([]string, 0)
-	i := 0
+	out := make(chan string)
+	var i Index
 
 	f, err := os.Open(l.filename)
-	defer f.Close()
 	if err != nil {
 		return nil, ErrReadFile
 	}
 
 	scanner := bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		sepIndex := strings.Index(line, " ")
-		id, _ := ToIndex(line[:sepIndex])
-
-		if index <= id {
-			result = append(result, line)
-		}
-		i++
-	}
-
 	if err := scanner.Err(); err != nil {
 		return nil, ErrReadFile
 	}
 
-	return result, nil
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			sepIndex := strings.Index(line, " ")
+			id, _ := ToIndex(line[:sepIndex])
+
+			if index <= id {
+				out <- scanner.Text()
+			}
+			i++
+		}
+
+		close(out)
+		f.Close()
+		l.logMutex.Unlock()
+	}()
+
+	return out, nil
 }
 
 // GetAll returns a map with the latest state
-func (l *LogbookFile) GetState() (map[string][]byte, error) {
+func (l *LogbookFile) GetAll() (<-chan string, error) {
 	l.logMutex.Lock()
-	defer l.logMutex.Unlock()
-	data := make(map[string][]byte)
+	out := make(chan string)
+
 	var i Index
 	i = 0
 
 	f, err := os.Open(l.filename)
-	defer f.Close()
 	if err != nil {
 		return nil, ErrReadFile
 	}
 
 	scanner := bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		var key, value, action string
-		var ind int
-
-		_, err := fmt.Sscanf(scanner.Text(), "%d %s %s %q", &ind, &action, &key, &value)
-		if err != nil {
-			return nil, err
-		}
-
-		data[key] = []byte(value)
-		i++
-	}
-
-	l.index = i
-
-	fmt.Println("Index: ", i)
 	if err := scanner.Err(); err != nil {
 		return nil, ErrReadFile
 	}
 
-	return data, nil
+	go func() {
+		for scanner.Scan() {
+			out <- scanner.Text()
+			i++
+		}
+
+		l.index = i
+
+		fmt.Println("Index: ", i)
+
+		close(out)
+		f.Close()
+		l.logMutex.Unlock()
+	}()
+
+	return out, nil
 }
