@@ -111,7 +111,7 @@ func ListDBs() {
 
 }
 
-// RebuildMap is rebuilds the in memory map from the log
+// RebuildMap read the log line by line and rebuilds the map
 func (d *Database) RebuildMap() error {
 	d.dbMutex.Lock()
 	defer d.dbMutex.Unlock()
@@ -132,7 +132,8 @@ func (d *Database) RebuildMap() error {
 			return err
 		}
 
-		data[key] = []byte(value)
+		cleanKey := key[1 : len(key)-1]
+		data[cleanKey] = []byte(value)
 	}
 
 	d.Data = data
