@@ -24,17 +24,6 @@ func main() {
 		return
 	}
 
-	for i := 0; i < 1000; i++ {
-		db.Set(fmt.Sprintf("TestKey%d", i), fmt.Sprintf("TestValue %d", i))
-	}
-	data, _ := db.Read("TestKey6")
-	fmt.Println(data)
-
-	err = db.SaveToFile()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	go networking.StartServer()
 	go networking.StartTCPServer()
 
