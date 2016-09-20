@@ -11,4 +11,7 @@ type Logbook interface {
 
 	// GetAll returns a channel and send the logbook line by line
 	GetAll() (<-chan string, error)
+
+	// GetIndex returns the current index
+	GetIndex() Index
 }

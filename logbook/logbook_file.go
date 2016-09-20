@@ -190,3 +190,7 @@ func (l *LogbookFile) GetAll() (<-chan string, error) {
 
 	return out, nil
 }
+
+func (l *LogbookFile) GetIndex() Index {
+	return l.index
+}

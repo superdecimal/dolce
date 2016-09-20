@@ -2,6 +2,7 @@ package database
 
 import (
 	"bufio"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"log"
@@ -51,9 +52,12 @@ func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 	db := &Database{
 		Dlog: dl,
 	}
+
+	// Check if data folder exists
 	_, err := os.Stat(config.DBFolder)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// If folder does not exist, create it
 			err := os.Mkdir(config.DBFolder, 0777)
 			if err != nil {
 				return nil, errors.New("error")
@@ -137,6 +141,31 @@ func (d *Database) RebuildMap() error {
 	}
 
 	d.Data = data
+
+	return nil
+}
+
+func (d *Database) SaveToFile() error {
+	err := os.Chdir("../" + config.DBFolder)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	f, err := os.Create(fmt.Sprintf("%s%d", d.DatabaseName, d.Dlog.GetIndex()))
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("error")
+	}
+
+	fmt.Printf("Saving database instance to file. Max index: %d\n", d.Dlog.GetIndex())
+	encoder := gob.NewEncoder(f)
+	err = encoder.Encode(d.Data)
+	if err != nil {
+		return err
+	}
+
+	f.Close()
 
 	return nil
 }
