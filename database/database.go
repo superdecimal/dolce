@@ -13,9 +13,16 @@ import (
 	"github.com/superdecimal/dolce/logbook"
 )
 
+// Database is the basic structure used.
+// * DatabaseName: is the name of the current database instance
+// * Path: is the path on which we save the database file
+// * File: is a pointer to the db file
+// * Version: is the version of the database
+// * Data: is the map tha holds the data for the database
+// * dbMutex: is the lock for the database
+// * Dlog: is the log used to store database events
 type Database struct {
 	DatabaseName string
-	Filename     string
 	Path         string
 	File         *os.File
 	Version      int
@@ -80,7 +87,6 @@ func New(dl logbook.Logbook, databaseName string) (*Database, error) {
 	defer f.Close()
 
 	db.DatabaseName = databaseName
-	db.Filename = databaseName
 	db.Version = 001
 	db.File = f
 	db.Data = map[string][]byte{}
@@ -145,7 +151,11 @@ func (d *Database) RebuildMap() error {
 	return nil
 }
 
+// SaveToFile save an instance of the db to a file
+// The name of the file is composed from the name
+// of database and the max index of the log
 func (d *Database) SaveToFile() error {
+	//TODO Use absolute path
 	err := os.Chdir("../" + config.DBFolder)
 	if err != nil {
 		fmt.Println(err)
